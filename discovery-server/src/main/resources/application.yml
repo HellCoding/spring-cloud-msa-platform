@@ -1,0 +1,18 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: discovery-server
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    # Standalone mode: this server does not register itself as a client,
+    # since it IS the registry. In a production cluster, these would be true
+    # and multiple Eureka instances would peer-replicate with each other.
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
