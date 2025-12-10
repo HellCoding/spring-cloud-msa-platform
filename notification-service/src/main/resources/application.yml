@@ -1,0 +1,25 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: notification-service
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    # Manual acknowledgment would be used in production for reliable processing.
+    # AUTO mode is sufficient for this demonstration.
+    listener:
+      simple:
+        acknowledge-mode: auto
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
