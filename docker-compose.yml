@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: msa-rabbitmq
+    ports:
+      - "5672:5672"     # AMQP protocol
+      - "15672:15672"   # Management UI (guest/guest)
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+  mysql:
+    image: mysql:8.0
+    container_name: msa-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: msadb
+    volumes:
+      - mysql-data:/var/lib/mysql
+    # MySQL is optional for production use. Development uses H2 in-memory DB.
+    profiles:
+      - prod
+
+volumes:
+  rabbitmq-data:
+  mysql-data:
