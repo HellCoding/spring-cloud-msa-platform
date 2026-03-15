@@ -1,0 +1,30 @@
+direction: right
+
+C: "Client" {
+  style.fill: "#1a1a2e"
+  style.font-color: "#ffffff"
+}
+USER: "User Service" {
+  style.fill: "#0f3460"
+  style.font-color: "#ffffff"
+}
+AUTH: "Auth Service" {
+  style.fill: "#1a1a2e"
+  style.font-color: "#ffffff"
+}
+CB: "Circuit Breaker" {
+  style.fill: "#e94560"
+  style.font-color: "#ffffff"
+}
+
+# Normal flow
+C -> USER: "1. GET /users/1/profile" {style.stroke: "#53bf9d"}
+USER -> AUTH: "2. OpenFeign:\nGET /auth/users/1" {style.stroke: "#53bf9d"}
+AUTH -> USER: "3. {email, name, role}" {style.stroke: "#f0a500"; style.stroke-dash: 3}
+USER -> C: "4. {nickname, bio, email, name}\n(Local + Feign combined)" {style.stroke: "#f0a500"; style.stroke-dash: 3}
+
+# Failure flow
+C -> USER: "5. GET /users/2/profile\n(Auth Service DOWN!)" {style.stroke: "#e94560"}
+USER -> CB: "6. OpenFeign call attempt" {style.stroke: "#e94560"}
+CB -> USER: "7. Failure rate > 50%\n-> Circuit OPEN\n-> FallbackFactory response\n{email: \"unavailable\"}" {style.stroke: "#e94560"; style.stroke-dash: 3}
+USER -> C: "8. {nickname, bio,\nemail: \"unavailable\"}" {style.stroke: "#e94560"; style.stroke-dash: 3}

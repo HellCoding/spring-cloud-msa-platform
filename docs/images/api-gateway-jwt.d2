@@ -1,0 +1,35 @@
+direction: right
+
+C: "Client" {
+  style.fill: "#1a1a2e"
+  style.font-color: "#ffffff"
+}
+GW: "API Gateway" {
+  style.fill: "#0f3460"
+  style.font-color: "#ffffff"
+}
+JWT: "JWT Filter" {
+  style.fill: "#533483"
+  style.font-color: "#ffffff"
+}
+AUTH: "Auth Service" {
+  style.fill: "#1a1a2e"
+  style.font-color: "#ffffff"
+}
+USER: "User Service" {
+  style.fill: "#1a1a2e"
+  style.font-color: "#ffffff"
+}
+
+# Login flow
+C -> GW: "1. POST /api/auth/login" {style.stroke: "#53bf9d"}
+GW -> AUTH: "2. Forward (StripPrefix=1)\n/api/auth/** -> skip auth" {style.stroke: "#53bf9d"}
+AUTH -> GW: "3. {token: \"eyJ...\"}" {style.stroke: "#f0a500"; style.stroke-dash: 3}
+GW -> C: "4. {token: \"eyJ...\"}" {style.stroke: "#f0a500"; style.stroke-dash: 3}
+
+# Authenticated request flow
+C -> JWT: "5. GET /api/users/1/profile\nAuthorization: Bearer eyJ..." {style.stroke: "#e94560"}
+JWT -> GW: "6. Valid -> X-User-Id: 1\nInvalid -> 401 Unauthorized" {style.stroke: "#e94560"}
+GW -> USER: "7. Forward + X-User-Id: 1" {style.stroke: "#e94560"}
+USER -> GW: "8. {nickname: \"...\"}" {style.stroke: "#f0a500"; style.stroke-dash: 3}
+GW -> C: "9. {nickname: \"...\"}" {style.stroke: "#f0a500"; style.stroke-dash: 3}

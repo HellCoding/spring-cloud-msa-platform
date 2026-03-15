@@ -20,75 +20,13 @@ Spring Cloud 기반 **마이크로서비스 아키텍처 플랫폼**입니다.
 
 ## Architecture
 
-```mermaid
-graph TB
-    subgraph Client
-        WEB["Web / Mobile Client"]
-    end
-
-    subgraph Gateway["API Gateway :8080"]
-        GW["Spring Cloud Gateway"]
-        JWT["JWT Filter"]
-        CB["Circuit Breaker<br/>Resilience4j"]
-    end
-
-    subgraph Discovery["Service Discovery"]
-        EUR["Eureka Server :8761"]
-    end
-
-    subgraph Services["Microservices"]
-        AUTH["Auth Service :8081<br/>JWT 발급 · 검증<br/>BCrypt 암호화"]
-        USER["User Service :8082<br/>프로필 관리<br/>OpenFeign 동기 호출"]
-        NOTI["Notification Service :8083<br/>이벤트 소비<br/>알림 발송"]
-    end
-
-    subgraph Messaging["Async Messaging"]
-        RMQ["RabbitMQ :5672<br/>Exchange: user.events<br/>Queue: notification.user.profile"]
-    end
-
-    subgraph Data["Data Layer"]
-        DB1["H2 / MySQL<br/>Auth DB"]
-        DB2["H2 / MySQL<br/>User DB"]
-    end
-
-    WEB --> GW
-    GW --> JWT
-    JWT --> CB
-    GW -- "lb://auth-service" --> AUTH
-    GW -- "lb://user-service" --> USER
-    GW -- "lb://notification-service" --> NOTI
-
-    AUTH -.-> EUR
-    USER -.-> EUR
-    NOTI -.-> EUR
-
-    USER -- "OpenFeign<br/>동기 호출" --> AUTH
-    USER -- "RabbitTemplate<br/>비동기 발행" --> RMQ
-    RMQ -- "@RabbitListener<br/>비동기 소비" --> NOTI
-
-    AUTH --> DB1
-    USER --> DB2
-```
+![Architecture](docs/images/architecture.png)
 
 ## 핵심 패턴
 
 ### 1. Service Discovery (Eureka)
 
-```mermaid
-sequenceDiagram
-    participant AUTH as Auth Service
-    participant USER as User Service
-    participant EUR as Eureka Server
-    participant GW as API Gateway
-
-    AUTH->>EUR: Register (auth-service, :8081)
-    USER->>EUR: Register (user-service, :8082)
-    EUR-->>GW: Service Registry 동기화
-
-    GW->>EUR: Lookup "user-service"
-    EUR-->>GW: [192.168.1.10:8082, 192.168.1.11:8082]
-    GW->>USER: Load Balanced Request (lb://user-service)
-```
+![Service Discovery](docs/images/service-discovery.png)
 
 - 서비스가 시작되면 Eureka에 자동 등록
 - Gateway는 서비스 이름(논리명)으로 라우팅 → IP/포트 하드코딩 불필요
@@ -96,28 +34,7 @@ sequenceDiagram
 
 ### 2. API Gateway + JWT 인증
 
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant GW as API Gateway
-    participant JWT as JWT Filter
-    participant AUTH as Auth Service
-    participant USER as User Service
-
-    C->>GW: POST /api/auth/login
-    Note over JWT: /api/auth/** → 인증 SKIP
-    GW->>AUTH: Forward (StripPrefix=1)
-    AUTH-->>GW: {token: "eyJ..."}
-    GW-->>C: {token: "eyJ..."}
-
-    C->>GW: GET /api/users/1/profile<br/>Authorization: Bearer eyJ...
-    GW->>JWT: 토큰 검증
-    Note over JWT: 유효 → X-User-Id 헤더 추가<br/>무효 → 401 Unauthorized
-    JWT->>GW: X-User-Id: 1
-    GW->>USER: Forward + X-User-Id: 1
-    USER-->>GW: {nickname: "..."}
-    GW-->>C: {nickname: "..."}
-```
+![API Gateway + JWT](docs/images/api-gateway-jwt.png)
 
 **설계 포인트:**
 - 인증은 Gateway에서 1회만 수행 → 각 서비스는 `X-User-Id` 헤더만 신뢰
@@ -126,27 +43,7 @@ sequenceDiagram
 
 ### 3. 동기 통신 (OpenFeign) + Circuit Breaker
 
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant USER as User Service
-    participant AUTH as Auth Service
-    participant CB as Circuit Breaker
-
-    C->>USER: GET /users/1/profile
-    USER->>AUTH: OpenFeign: GET /auth/users/1
-    AUTH-->>USER: {email, name, role}
-    Note over USER: UserProfile (local) + AuthUser (Feign) 조합
-    USER-->>C: {nickname, bio, email, name}
-
-    Note over AUTH: Auth Service 장애 발생!
-    C->>USER: GET /users/2/profile
-    USER->>CB: OpenFeign 호출 시도
-    Note over CB: 실패율 50% 초과<br/>→ Circuit OPEN
-    CB-->>USER: FallbackFactory 응답
-    Note over USER: 기본 사용자 정보로 응답<br/>(email: "unavailable")
-    USER-->>C: {nickname, bio, email: "unavailable"}
-```
+![OpenFeign + Circuit Breaker](docs/images/feign-circuit-breaker.png)
 
 ```java
 // OpenFeign 클라이언트 + Fallback
@@ -168,21 +65,7 @@ public class AuthServiceClientFallback implements FallbackFactory<AuthServiceCli
 
 ### 4. 비동기 통신 (RabbitMQ)
 
-```mermaid
-sequenceDiagram
-    participant USER as User Service
-    participant RMQ as RabbitMQ
-    participant NOTI as Notification Service
-
-    USER->>USER: updateProfile(userId, nickname)
-    USER->>RMQ: Publish to "user.events"<br/>routing key: "user.profile.updated"<br/>{userId, nickname, eventType, timestamp}
-
-    Note over USER: 즉시 응답 (비동기)
-    USER-->>USER: return updated profile
-
-    RMQ->>NOTI: @RabbitListener<br/>Queue: "notification.user.profile"
-    Note over NOTI: 알림 기록 저장<br/>이메일/푸시 발송 (확장)
-```
+![Async RabbitMQ](docs/images/async-rabbitmq.png)
 
 **동기 vs 비동기 선택 기준:**
 

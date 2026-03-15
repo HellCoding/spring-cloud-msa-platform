@@ -1,0 +1,95 @@
+direction: down
+
+client: "Client" {
+  style.fill: "#1a1a2e"
+  style.font-color: "#ffffff"
+  WEB: "Web / Mobile Client" {
+    style.fill: "#16213e"
+    style.font-color: "#ffffff"
+  }
+}
+
+gateway: "API Gateway :8080" {
+  style.fill: "#0f3460"
+  style.font-color: "#ffffff"
+  GW: "Spring Cloud Gateway" {
+    style.fill: "#1a1a2e"
+    style.font-color: "#ffffff"
+  }
+  JWT: "JWT Filter" {
+    style.fill: "#1a1a2e"
+    style.font-color: "#ffffff"
+  }
+  CB: "Circuit Breaker\nResilience4j" {
+    style.fill: "#1a1a2e"
+    style.font-color: "#ffffff"
+  }
+  GW -> JWT
+  JWT -> CB
+}
+
+discovery: "Service Discovery" {
+  style.fill: "#0f3460"
+  style.font-color: "#ffffff"
+  EUR: "Eureka Server :8761" {
+    style.fill: "#1a1a2e"
+    style.font-color: "#ffffff"
+  }
+}
+
+services: "Microservices" {
+  style.fill: "#0f3460"
+  style.font-color: "#ffffff"
+  AUTH: "Auth Service :8081\nJWT issue/verify\nBCrypt encryption" {
+    style.fill: "#1a1a2e"
+    style.font-color: "#ffffff"
+  }
+  USER: "User Service :8082\nProfile management\nOpenFeign sync call" {
+    style.fill: "#1a1a2e"
+    style.font-color: "#ffffff"
+  }
+  NOTI: "Notification Service :8083\nEvent consumer\nNotification dispatch" {
+    style.fill: "#1a1a2e"
+    style.font-color: "#ffffff"
+  }
+}
+
+messaging: "Async Messaging" {
+  style.fill: "#0f3460"
+  style.font-color: "#ffffff"
+  RMQ: "RabbitMQ :5672\nExchange: user.events\nQueue: notification.user.profile" {
+    style.fill: "#533483"
+    style.font-color: "#ffffff"
+  }
+}
+
+data: "Data Layer" {
+  style.fill: "#0f3460"
+  style.font-color: "#ffffff"
+  DB1: "H2 / MySQL\nAuth DB" {
+    shape: cylinder
+    style.fill: "#1a1a2e"
+    style.font-color: "#ffffff"
+  }
+  DB2: "H2 / MySQL\nUser DB" {
+    shape: cylinder
+    style.fill: "#1a1a2e"
+    style.font-color: "#ffffff"
+  }
+}
+
+client.WEB -> gateway.GW: {style.stroke: "#53bf9d"}
+gateway.GW -> services.AUTH: "lb://auth-service" {style.stroke: "#53bf9d"}
+gateway.GW -> services.USER: "lb://user-service" {style.stroke: "#53bf9d"}
+gateway.GW -> services.NOTI: "lb://notification-service" {style.stroke: "#53bf9d"}
+
+services.AUTH -> discovery.EUR: {style.stroke: "#e94560"; style.stroke-dash: 3}
+services.USER -> discovery.EUR: {style.stroke: "#e94560"; style.stroke-dash: 3}
+services.NOTI -> discovery.EUR: {style.stroke: "#e94560"; style.stroke-dash: 3}
+
+services.USER -> services.AUTH: "OpenFeign\nsync call" {style.stroke: "#f0a500"}
+services.USER -> messaging.RMQ: "RabbitTemplate\nasync publish" {style.stroke: "#f0a500"}
+messaging.RMQ -> services.NOTI: "@RabbitListener\nasync consume" {style.stroke: "#f0a500"}
+
+services.AUTH -> data.DB1: {style.stroke: "#53bf9d"}
+services.USER -> data.DB2: {style.stroke: "#53bf9d"}

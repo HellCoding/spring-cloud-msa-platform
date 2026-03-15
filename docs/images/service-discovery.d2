@@ -1,0 +1,39 @@
+direction: right
+
+AUTH: "Auth Service" {
+  style.fill: "#1a1a2e"
+  style.font-color: "#ffffff"
+}
+USER: "User Service" {
+  style.fill: "#1a1a2e"
+  style.font-color: "#ffffff"
+}
+EUR: "Eureka Server" {
+  style.fill: "#533483"
+  style.font-color: "#ffffff"
+}
+GW: "API Gateway" {
+  style.fill: "#0f3460"
+  style.font-color: "#ffffff"
+}
+
+AUTH -> EUR: "1. Register\n(auth-service, :8081)" {
+  style.stroke: "#53bf9d"
+}
+USER -> EUR: "2. Register\n(user-service, :8082)" {
+  style.stroke: "#53bf9d"
+}
+EUR -> GW: "3. Service Registry sync" {
+  style.stroke: "#e94560"
+  style.stroke-dash: 3
+}
+GW -> EUR: "4. Lookup \"user-service\"" {
+  style.stroke: "#f0a500"
+}
+EUR -> GW: "5. [192.168.1.10:8082,\n192.168.1.11:8082]" {
+  style.stroke: "#f0a500"
+  style.stroke-dash: 3
+}
+GW -> USER: "6. Load Balanced Request\n(lb://user-service)" {
+  style.stroke: "#53bf9d"
+}

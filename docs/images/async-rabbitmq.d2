@@ -1,0 +1,19 @@
+direction: right
+
+USER: "User Service" {
+  style.fill: "#0f3460"
+  style.font-color: "#ffffff"
+}
+RMQ: "RabbitMQ" {
+  style.fill: "#533483"
+  style.font-color: "#ffffff"
+}
+NOTI: "Notification Service" {
+  style.fill: "#1a1a2e"
+  style.font-color: "#ffffff"
+}
+
+USER -> USER: "1. updateProfile(userId, nickname)" {style.stroke: "#53bf9d"}
+USER -> RMQ: "2. Publish to \"user.events\"\nrouting key: \"user.profile.updated\"\n{userId, nickname, eventType, timestamp}" {style.stroke: "#f0a500"}
+USER -> USER: "3. Return updated profile\n(immediate, async)" {style.stroke: "#53bf9d"; style.stroke-dash: 3}
+RMQ -> NOTI: "4. @RabbitListener\nQueue: \"notification.user.profile\"\nSave notification record\nSend email/push (extensible)" {style.stroke: "#e94560"}
